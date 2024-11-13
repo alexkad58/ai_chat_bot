@@ -302,7 +302,7 @@ const handleMessage = async (event) => {
     if (userId) {
         await handleUser(event, chatInput, `${userId}`);
         // console.log(`[user] Получено сообщение: ${event.message.message}`);
-    } else if (chatId) {
+    } else if (chatId && event.message.fromId) {
         await handleChat(event, chatInput, `${chatId}`, event.message.fromId.userId);
         // console.log(`[chat] Получено сообщение: ${event.message.message}`);
     }
