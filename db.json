@@ -1,0 +1,19 @@
+{
+    "users": {},
+    "chats": {
+       
+    },
+    "savedUsers": [
+      
+    ],
+    "savedChats": [
+
+    ],
+    "configTg": {
+        "prompts": {
+            "global": "обычный веселый человек"
+        },
+        "chatGlobal": 15,
+        "chatUser": 20
+    }
+}
