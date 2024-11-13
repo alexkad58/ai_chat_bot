@@ -221,7 +221,7 @@ const handleUser = async (event, chatInput, userId) => {
         
         const reply = await sendAnthropicRequest({ text: event.message.message, system: userPrompt })
 
-        const timer = await TGclient.getData('/configTg/timer')
+        const timer = await TGclient.db.getData('/configTg/timer')
         await sleep(getRndInteger(timer[0] * 1000, timer[1] * 1000))
         await TGclient.sendMessage(chatInput, { message: reply, replyTo: event.message.id})
 
@@ -277,7 +277,7 @@ const handleChat = async (event, chatInput, chatId, userId) => {
             if (chatHistory[userId].length >= configTg.chatUser) chatHistory[userId].shift();
             chatHistory[userId].push({ user: message, assistant: reply.text });
 
-            const timer = await TGclient.getData('/configTg/timer')
+            const timer = await TGclient.db.getData('/configTg/timer')
             await sleep(getRndInteger(timer[0] * 1000, timer[1] * 1000))
             await TGclient.sendMessage(chatInput, { message: reply.text, replyTo: event.message.id})
         }
