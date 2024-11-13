@@ -251,6 +251,7 @@ const handleChat = async (event, chatInput, chatId, userId) => {
 
         const me = await TGclient.getMe();
         if (me.id.valueOf() === userId.valueOf()) {
+            console.log(`[bot] Распознана команда: ${message}`)
             if (message.startsWith('/deep')) return setDeep(chatInput, message);
             if (message.startsWith('/prompt')) return setPrompt(chatInput, message, event.message.media);
             if (message.startsWith('/system')) return setSystem(chatInput, message, event.message.media);
@@ -300,10 +301,10 @@ const handleMessage = async (event) => {
 
     if (userId) {
         await handleUser(event, chatInput, `${userId}`);
-        console.log(`[user] Получено сообщение: ${event.message.message}`);
+        // console.log(`[user] Получено сообщение: ${event.message.message}`);
     } else if (chatId) {
         await handleChat(event, chatInput, `${chatId}`, event.message.fromId.userId);
-        console.log(`[chat] Получено сообщение: ${event.message.message}`);
+        // console.log(`[chat] Получено сообщение: ${event.message.message}`);
     }
 };
 
