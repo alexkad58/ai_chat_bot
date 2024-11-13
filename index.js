@@ -163,6 +163,7 @@ const shouldReply = async (message, mainHistory, userHistory, chatPrompt) => {
 };
 
 const handleUser = async (event, chatInput, userId) => {
+    if (!WORKING) return
     try {
         const configTg = await TGclient.db.getData(`/configTg`);
         const savedUsers = await TGclient.db.getData(`/savedUsers`);
@@ -215,6 +216,7 @@ const handleChat = async (event, chatInput, chatId, userId) => {
             return;
         }
 
+        if (!WORKING) return
         chatHistory.main.push({ [userId]: message });
 
         const prompts = await TGclient.db.getData('/configTg/prompts')
@@ -239,7 +241,6 @@ const handleChat = async (event, chatInput, chatId, userId) => {
 };
 
 const handleMessage = async (event) => {
-    if (!WORKING) return
     const chatInput = await event.getInputChat();
     const userId = chatInput.userId;
     const chatId = chatInput.chatId;
