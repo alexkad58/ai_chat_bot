@@ -78,6 +78,10 @@ const sendMessage = async (chatId, message) => {
     await TGclient.sendMessage(chatId, { message });
 };
 
+const getRndInteger = (min, max) => {
+    return Math.floor(Math.random() * (max - min) ) + min;
+  }
+
 const setPrompt = async (chatInput, message, media) => {
     const args = message.split(' ');
     const configTg = await TGclient.db.getData('/configTg');
@@ -118,6 +122,32 @@ const setPrompt = async (chatInput, message, media) => {
     await sendMessage(chatInput, '[bot] промпт успешно установлен');
 };
 
+const setSystem = async (chatInput, message, media) => {
+    const args = message.split(' ');
+    const configTg = await TGclient.db.getData('/configTg');
+
+    const handleSystemError = async () => {
+        await sendMessage(chatInput, 'Неправильное использование команды.\nИспользуйте: /system + файл .txt');
+    };
+
+    const updateConfig = async () => TGclient.db.push('/configTg', configTg);
+
+    let textSystem = ''
+    if (media) {
+        try {
+            const bufferSystem = await TGclient.downloadMedia(media, './tempSystem.txt');
+            textSystem = bufferSystem.toString('utf8')
+        } catch (error) {
+            console.error('Ошибка при загрузке файла:', error);
+        }
+    } else return handleSystemError();
+
+    configTg.prompts.system = textSystem;
+
+    await updateConfig();
+    await sendMessage(chatInput, '[bot] системный промпт успешно установлен');
+};
+
 const changeStatus = async (chatInput, bool) => {
     WORKING = bool,
     await sendMessage(chatInput, `[bot] статус работы бота: ${bool}`);
@@ -131,29 +161,37 @@ const setDeep = async (chatInput, message) => {
     configTg.chatGlobal = chatGlobal;
     configTg.chatUser = chatUser;
     await TGclient.db.push('/configTg', configTg);
-    await sendMessage(chatInput, '[bot] значения успешно сохранены');
+    await sendMessage(chatInput, '[bot] значения глубины успешно сохранены');
 };
+
+const setTime = async (chatInput, message) => {
+    const [_, first, second] = message.split(' ').map(Number);
+    if (!first || !second) return;
+
+    const configTg = await TGclient.db.getData('/configTg');
+    configTg.timer = [first, second];
+    await TGclient.db.push('/configTg', configTg);
+    await sendMessage(chatInput, '[bot] значения таймера успешно сохранены');
+}
 
 const getId = async (chatInput, messageId, chatId) => {
     await TGclient.deleteMessages(chatInput, [Number(messageId)], true);
     await sendMessage('me', `[bot] \`${chatId}\``);
 };
 
-const shouldReply = async (message, mainHistory, userHistory, chatPrompt) => {
+const shouldReply = async (message, mainHistory, userHistory, chatPrompt, systemPrompt) => {
     // console.log(chatPrompt)
-    const systemStart = 'Ты представляешь собой обычного пользователя, который общается в чатах непринуждённо и естественно. Твоя задача — читать сообщения и определять, нужно ли отвечать, чтобы поддерживать атмосферу живого общения. Ты должен вести себя как человек, отвечая только тогда, когда это уместно, а иногда просто наблюдая за беседой.'
-    const systemShould = 'Для принятия решения учти: Актуальность и уместность: Отвечай, если сообщение содержит прямой вопрос, требует комментария, или если в беседе возникло обращение по твоему имени. Сохранение естественности: Старайся отвечать только на те сообщения, которые требуют участия, как это сделал бы обычный человек. Личный диалог: Обращай внимание на историю общения с автором. Если была начата личная беседа, можешь продолжить её, когда это кажется естественным, или если требуется уточнение.'
     const systemData = `Входные данные:
-        Вот заданный промпт для данного чата: ${chatPrompt} ты должен общаться полностью на основе этого промпта.
         Вот история последних сообщений: ${mainHistory}.
         Вот история общения с автором сообщения: ${userHistory}.
-        Вот сообщение на которое ды должен ответить или не отвечать: ${message}.`
-    const systemFinal = `Твоя задача: На основе этих данных прими решение, отвечать на сообщение или нет, и ответь ТОЛЬКО в формате JSON (без new line символа, чтобы можно было запарсить из строки в json):
+        Вот сообщение на которое ды должен ответить или не отвечать: ${message}.\n`
+    const systemConfig = chatPrompt
+    const systemFinal = `\nТвоя задача: На основе этих данных прими решение, отвечать на сообщение или нет, и ответь ТОЛЬКО в формате JSON (без new line символа, чтобы можно было запарсить из строки в json):
         { "isReply": boolean, "text": string }
         Поле isReply: установи в true, если считаешь нужным ответить, и в false, если ответ не требуется.
         Поле text: заполни текстом ответа только если isReply равно true. В противном случае оставь text пустым.`
 
-    const system = systemStart + systemShould + systemData + systemFinal
+    const system = systemData + systemConfig + systemFinal
     const prompt = {}
     prompt.text = message
     prompt.system = system
@@ -182,7 +220,11 @@ const handleUser = async (event, chatInput, userId) => {
         userPrompt = prompts[userId]
         
         const reply = await sendAnthropicRequest({ text: event.message.message, system: userPrompt })
-        await sendMessage(chatInput, reply);
+
+        const timer = await TGclient.getData('/configTg/timer')
+        await sleep(getRndInteger(timer[0] * 1000, timer[1] * 1000))
+        await TGclient.sendMessage(chatInput, { message: reply, replyTo: event.message.id})
+
         chatHistory.push({ user:  event.message });
         chatHistory.push({ assistant: reply });
         await TGclient.db.push(`/chats/${userId}`, chatHistory);
@@ -211,8 +253,10 @@ const handleChat = async (event, chatInput, chatId, userId) => {
         if (me.id.valueOf() === userId.valueOf()) {
             if (message.startsWith('/deep')) return setDeep(chatInput, message);
             if (message.startsWith('/prompt')) return setPrompt(chatInput, message, event.message.media);
+            if (message.startsWith('/system')) return setSystem(chatInput, message, event.message.media);
             if (message.startsWith('/start')) return changeStatus(chatInput, true);
             if (message.startsWith('/stop')) return changeStatus(chatInput, false);
+            if (message.startsWith('/time')) return setTime(chatInput, message);
             return;
         }
 
@@ -223,15 +267,18 @@ const handleChat = async (event, chatInput, chatId, userId) => {
 
         if (!prompts[chatId]) return
         chatPrompt = prompts[chatId]
-        const reply = await shouldReply(message, chatHistory.main, chatHistory[userId], chatPrompt);
+        systemPrompt = prompts.system
+        const reply = await shouldReply(message, chatHistory.main, chatHistory[userId], chatPrompt, systemPrompt);
         console.log(reply)
         if (reply.isReply) {
             chatHistory.main.push({ assistant: reply.text });
             chatHistory[userId] = chatHistory[userId] || [];
             if (chatHistory[userId].length >= configTg.chatUser) chatHistory[userId].shift();
             chatHistory[userId].push({ user: message, assistant: reply.text });
-            await sleep(7000)
-            await sendMessage(chatInput, reply.text);
+
+            const timer = await TGclient.getData('/configTg/timer')
+            await sleep(getRndInteger(timer[0] * 1000, timer[1] * 1000))
+            await TGclient.sendMessage(chatInput, { message: reply.text, replyTo: event.message.id})
         }
 
         await TGclient.db.push(`/chats/${chatId}`, chatHistory);
