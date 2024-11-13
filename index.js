@@ -33,12 +33,7 @@ const sendAnthropicRequest = async (prompt) => {
                 model: model,
                 max_tokens: 1024,
                 system: prompt.system,
-                messages: [
-                    {
-                        role: 'user',
-                        content: prompt.text
-                    }
-                ]
+                messages: prompt.messages
             },
             {
                 headers: {
@@ -193,6 +188,11 @@ const shouldReply = async (message, mainHistory, userHistory, chatPrompt, system
 
     const system = systemData + systemConfig + systemFinal
     const prompt = {}
+    prompt.messages = userHistory.flatMap(obj => [
+        { role: 'user', content: obj.user },
+        { role: 'assistant', content: obj.assistant }
+    ]);
+    prompt.messages.push({ role: 'user', content: message })
     prompt.text = message
     prompt.system = system
     const reply = await sendAnthropicRequest(prompt)
