@@ -23,6 +23,8 @@ const anthropicApiKey = process.env.AI_KEY;
 const anthropicEndpoint = 'https://api.anthropic.com/v1/messages';
 const model = 'claude-3-haiku-20240307';
 
+let WORKING = true
+
 const sendAnthropicRequest = async (prompt) => {
     try {
         const response = await axios.post(
@@ -116,6 +118,11 @@ const setPrompt = async (chatInput, message, media) => {
     await sendMessage(chatInput, '[bot] промпт успешно установлен');
 };
 
+const changeStatus = async (chatInput, bool) => {
+    WORKING = bool,
+    await sendMessage(chatInput, `[bot] статус работы бота: ${bool}`);
+}
+
 const setDeep = async (chatInput, message) => {
     const [_, chatGlobal, chatUser] = message.split(' ').map(Number);
     if (!chatGlobal || !chatUser) return;
@@ -203,13 +210,15 @@ const handleChat = async (event, chatInput, chatId, userId) => {
         if (me.id.valueOf() === userId.valueOf()) {
             if (message.startsWith('/deep')) return setDeep(chatInput, message);
             if (message.startsWith('/prompt')) return setPrompt(chatInput, message, event.message.media);
+            if (message.startsWith('/start')) return changeStatus(chatInput, true);
+            if (message.startsWith('/stop')) return changeStatus(chatInput, false);
             return;
         }
 
         chatHistory.main.push({ [userId]: message });
 
         const prompts = await TGclient.db.getData('/configTg/prompts')
-        
+
         if (!prompts[chatId]) return
         chatPrompt = prompts[chatId]
         const reply = await shouldReply(message, chatHistory.main, chatHistory[userId], chatPrompt);
@@ -230,6 +239,7 @@ const handleChat = async (event, chatInput, chatId, userId) => {
 };
 
 const handleMessage = async (event) => {
+    if (!WORKING) return
     const chatInput = await event.getInputChat();
     const userId = chatInput.userId;
     const chatId = chatInput.chatId;
