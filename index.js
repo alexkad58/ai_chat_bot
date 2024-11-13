@@ -286,8 +286,12 @@ const handleChat = async (event, chatInput, chatId, userId) => {
         console.error('Ошибка:', error.message);
     }
 };
-
+let showed = false
 const handleMessage = async (event) => {
+    if (!showed) {
+        console.log(event.message)
+        showed = true
+    }
     console.log(event.message.message)
     const chatInput = await event.getInputChat();
     const userId = chatInput.userId;
