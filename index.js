@@ -292,11 +292,11 @@ const handleMessage = async (event) => {
     
     const chatInput = await event.getInputChat();
     const userId = chatInput.userId;
-    const chatId = chatInput.chatId;
-    if (!showed) {
-        console.log(chatInput)
-        // showed = true
-    }
+    const chatId = chatInput.chatId || chatInput.channelId
+    // if (!showed) {
+    //     console.log(chatInput)
+    //     // showed = true
+    // }
 
     if (userId) {
         await handleUser(event, chatInput, `${userId}`);
