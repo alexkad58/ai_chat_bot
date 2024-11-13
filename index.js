@@ -188,10 +188,15 @@ const shouldReply = async (message, mainHistory, userHistory, chatPrompt, system
 
     const system = systemData + systemConfig + systemFinal
     const prompt = {}
-    prompt.messages = userHistory.flatMap(obj => [
-        { role: 'user', content: obj.user },
-        { role: 'assistant', content: obj.assistant }
-    ]);
+    if (userHistory) {
+        prompt.messages = userHistory.flatMap(obj => [
+            { role: 'user', content: obj.user },
+            { role: 'assistant', content: obj.assistant }
+        ]);
+    } esle {
+        userHistory = []
+    }
+    
     prompt.messages.push({ role: 'user', content: message })
     prompt.text = message
     prompt.system = system
