@@ -23,7 +23,7 @@ const anthropicApiKey = process.env.AI_KEY;
 const anthropicEndpoint = 'https://api.anthropic.com/v1/messages';
 const model = 'claude-3-haiku-20240307';
 
-const sendAnthropicRequest = async (prompt, chatId) => {
+const sendAnthropicRequest = async (prompt) => {
     try {
         const response = await axios.post(
             anthropicEndpoint,
@@ -47,7 +47,7 @@ const sendAnthropicRequest = async (prompt, chatId) => {
                 httpsAgent: agent  // Добавляем прокси-агент
             }
         );
-
+        
         // console.log('Ответ от Anthropics:', response.data);
         return response.data.content[0].text
     } catch (error) {
@@ -55,7 +55,6 @@ const sendAnthropicRequest = async (prompt, chatId) => {
     }
 }
 
-// const ai = new Anthropic({ apiKey: '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' });
 const apiId = config.bot.appId;
 const apiHash = config.bot.apiHash;
 const stringSession = new StringSession(config.bot.stringSession);
@@ -71,38 +70,45 @@ const updateSessionString = (session) => {
     });
 };
 
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
 const sendMessage = async (chatId, message) => {
     await TGclient.sendMessage(chatId, { message });
 };
 
-const setPrompt = async (chatInput, message) => {
+const setPrompt = async (chatInput, message, media) => {
     const args = message.split(' ');
     const configTg = await TGclient.db.getData('/configTg');
 
     const handlePromptError = async () => {
-        await sendMessage(chatInput, 'Неправильное использование команды.\nИспользуйте: /prompt [g] [юзернейм | id_чата] <ваш_промпт>');
+        await sendMessage(chatInput, 'Неправильное использование команды.\nИспользуйте: /prompt [g] [юзернейм | id_чата] + файл .txt');
     };
 
     const updateConfig = async () => TGclient.db.push('/configTg', configTg);
 
+    let textPrompt = ''
+    if (media) {
+        try {
+            const bufferPrompt = await TGclient.downloadMedia(media, './tempPrompt.txt');
+            textPrompt = bufferPrompt.toString('utf8')
+        } catch (error) {
+            console.error('Ошибка при загрузке файла:', error);
+        }
+    } else return handlePromptError();
+
     if (args[1] === 'g') {
-        const prompt = args.slice(2).join(' ');
-        if (!prompt) return handlePromptError();
-        configTg.prompts.global = prompt;
+        configTg.prompts.global = textPrompt;
     } else {
         const target = args[1];
-        const prompt = args.slice(2).join(' ');
-        if (!prompt) return handlePromptError();
-
         if (isNaN(target)) {
             try {
                 const userEntity = await TGclient.getEntity(target);
-                configTg.prompts[userEntity.id] = prompt;
+                configTg.prompts[userEntity.id] = textPrompt;
             } catch (error) {
                 console.log('Ошибка:', error.message);
             }
         } else {
-            configTg.prompts[target] = prompt;
+            configTg.prompts[target] = textPrompt;
         }
     }
 
@@ -127,11 +133,11 @@ const getId = async (chatInput, messageId, chatId) => {
 };
 
 const shouldReply = async (message, mainHistory, userHistory, chatPrompt) => {
-    console.log(chatPrompt)
+    // console.log(chatPrompt)
     const systemStart = 'Ты представляешь собой обычного пользователя, который общается в чатах непринуждённо и естественно. Твоя задача — читать сообщения и определять, нужно ли отвечать, чтобы поддерживать атмосферу живого общения. Ты должен вести себя как человек, отвечая только тогда, когда это уместно, а иногда просто наблюдая за беседой.'
     const systemShould = 'Для принятия решения учти: Актуальность и уместность: Отвечай, если сообщение содержит прямой вопрос, требует комментария, или если в беседе возникло обращение по твоему имени. Сохранение естественности: Старайся отвечать только на те сообщения, которые требуют участия, как это сделал бы обычный человек. Личный диалог: Обращай внимание на историю общения с автором. Если была начата личная беседа, можешь продолжить её, когда это кажется естественным, или если требуется уточнение.'
     const systemData = `Входные данные:
-        Вот заданный промпт для данного чата: ${chatPrompt}} ты должен общаться полностью на основе этого промпта.
+        Вот заданный промпт для данного чата: ${chatPrompt} ты должен общаться полностью на основе этого промпта.
         Вот история последних сообщений: ${mainHistory}.
         Вот история общения с автором сообщения: ${userHistory}.
         Вот сообщение на которое ды должен ответить или не отвечать: ${message}.`
@@ -164,11 +170,9 @@ const handleUser = async (event, chatInput, userId) => {
 
         let userPrompt = ''
         const prompts = await TGclient.db.getData('/configTg/prompts')
-        if (prompts[userId]) {
-            userPrompt = prompts[userId]
-        } else {
-            userPrompt = prompts.global
-        }
+        if (!prompts[userId]) return
+        userPrompt = prompts[userId]
+        
         const reply = await sendAnthropicRequest({ text: event.message.message, system: userPrompt })
         await sendMessage(chatInput, reply);
         chatHistory.push({ user:  event.message });
@@ -198,19 +202,16 @@ const handleChat = async (event, chatInput, chatId, userId) => {
         const me = await TGclient.getMe();
         if (me.id.valueOf() === userId.valueOf()) {
             if (message.startsWith('/deep')) return setDeep(chatInput, message);
-            if (message.startsWith('/prompt')) return setPrompt(chatInput, message);
+            if (message.startsWith('/prompt')) return setPrompt(chatInput, message, event.message.media);
             return;
         }
 
         chatHistory.main.push({ [userId]: message });
 
-        let chatPrompt = ''
         const prompts = await TGclient.db.getData('/configTg/prompts')
-        if (prompts[chatId]) {
-            chatPrompt = prompts[chatId]
-        } else {
-            chatPrompt = prompts.global
-        }
+        
+        if (!prompts[chatId]) return
+        chatPrompt = prompts[chatId]
         const reply = await shouldReply(message, chatHistory.main, chatHistory[userId], chatPrompt);
         console.log(reply)
         if (reply.isReply) {
@@ -218,6 +219,7 @@ const handleChat = async (event, chatInput, chatId, userId) => {
             chatHistory[userId] = chatHistory[userId] || [];
             if (chatHistory[userId].length >= configTg.chatUser) chatHistory[userId].shift();
             chatHistory[userId].push({ user: message, assistant: reply.text });
+            await sleep(7000)
             await sendMessage(chatInput, reply.text);
         }
 
