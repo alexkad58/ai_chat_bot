@@ -297,7 +297,7 @@ const handleMessage = async (event) => {
         console.log(chatInput)
         // showed = true
     }
-    console.log(event.message.message)
+
     if (userId) {
         await handleUser(event, chatInput, `${userId}`);
         console.log(`[user] Получено сообщение: ${event.message.message}`);
