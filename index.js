@@ -288,15 +288,16 @@ const handleChat = async (event, chatInput, chatId, userId) => {
 };
 let showed = false
 const handleMessage = async (event) => {
-    if (!showed) {
-        console.log(event.message)
-        showed = true
-    }
-    console.log(event.message.message)
+    
+    
     const chatInput = await event.getInputChat();
     const userId = chatInput.userId;
     const chatId = chatInput.chatId;
-    
+    if (!showed) {
+        console.log(chatInput)
+        showed = true
+    }
+    console.log(event.message.message)
     if (userId) {
         await handleUser(event, chatInput, `${userId}`);
         console.log(`[user] Получено сообщение: ${event.message.message}`);
