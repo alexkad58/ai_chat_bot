@@ -194,7 +194,7 @@ const shouldReply = async (message, mainHistory, userHistory, chatPrompt, system
             { role: 'assistant', content: obj.assistant }
         ]);
     } esle {
-        userHistory = []
+        prompt.messages = []
     }
     
     prompt.messages.push({ role: 'user', content: message })
