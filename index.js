@@ -288,7 +288,7 @@ const handleChat = async (event, chatInput, chatId, userId) => {
 };
 
 const handleMessage = async (event) => {
-    console.log(event.message)
+    console.log(event.message.message)
     const chatInput = await event.getInputChat();
     const userId = chatInput.userId;
     const chatId = chatInput.chatId;
