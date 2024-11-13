@@ -295,7 +295,7 @@ const handleMessage = async (event) => {
     const chatId = chatInput.chatId;
     if (!showed) {
         console.log(chatInput)
-        showed = true
+        // showed = true
     }
     console.log(event.message.message)
     if (userId) {
