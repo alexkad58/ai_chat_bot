@@ -348,7 +348,7 @@ TGclient.addEventHandler(handleMessage, new NewMessage({}));
         onError: console.log,
     });
 
-    config.bot.stringSession = session;
+    config.bot.stringSession = TGclient.session;
     updateAppConfig();
     // await sendMessage("me", "[bot] запущен");
     await updateLogger()
