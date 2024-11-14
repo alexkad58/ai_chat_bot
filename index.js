@@ -1,6 +1,6 @@
 const config = require('./config.json');
 require('dotenv').config()
-const { TelegramClient } = require("telegram");
+const { Api, TelegramClient } = require("telegram");
 const { StringSession } = require("telegram/sessions");
 const { NewMessage } = require('telegram/events');
 const { JsonDB, Config } = require('node-json-db');
@@ -14,7 +14,7 @@ const rl = readline.createInterface({
 });
 
 const axios = require('axios');
-const { message } = require('telegram/client');
+const { message, tgClient } = require('telegram/client');
 
 const proxyUrl = 'http://ugdxwxma:crh5c5ve654k@64.137.42.112:5157';
 const agent = new HttpsProxyAgent(proxyUrl);
@@ -204,12 +204,17 @@ const clearHsitory = async (message) => {
     await logger(`[bot] история группы \`${chatId}\` очищена`)
 }
 
-const shouldReply = async (message, mainHistory, userHistory, chatPrompt, systemPrompt) => {
+const shouldReply = async (message, mainHistory, userHistory, chatPrompt, systemPrompt, userInfo) => {
     // console.log(chatPrompt)
     const systemData = `Входные данные:
         Вот история последних сообщений: ${mainHistory}.
         Вот история общения с автором сообщения: ${userHistory}.
-        Вот сообщение на которое ды должен ответить или не отвечать: ${message}.
+        Вот сообщение на которое ты должен ответить или не отвечать: ${message}.
+        Даные об авторе сообщения, указанные в профиле:
+            Юзернейм: ${userInfo.username}
+            Имя: ${userInfo.firstName}
+            Фамилия: ${userInfo.lastName}
+            Информация о себе: ${userInfo.bio}
         Вот промпт для общения:\n`
     const systemConfig = chatPrompt
     const systemFinal = `\nТвоя задача: Опираясь на предоставленные данные, прими решение, нужно ли отвечать на сообщение, и ответь строго в формате JSON, без каких-либо символов перевода строки, пробелов или дополнительного текста вне JSON-структуры. Отвечай исключительно в следующем формате:
@@ -319,7 +324,20 @@ const handleChat = async (event, chatInput, chatId, userId) => {
         if (!prompts[chatId]) return
         chatPrompt = prompts[chatId]
         systemPrompt = prompts.system
-        const reply = await shouldReply(message, chatHistory.main, chatHistory[userId], chatPrompt, systemPrompt);
+
+        const user = await TGclient.invoke(
+            new Api.users.GetFullUser({
+              id: userId,
+            })
+        );
+
+        const userInfo = {
+            username: user.users[0].username,
+            firstName: user.users[0].firstName,
+            lastName: user.users[0].lastName,
+            bio: user.fullUser.about
+        }
+        const reply = await shouldReply(message, chatHistory.main, chatHistory[userId], chatPrompt, systemPrompt, userInfo);
         await logger(`[api] Решил ответить: ${reply.isReply}`)
         if (reply.isReply) {
             chatHistory.main.push({ assistant: reply.text });
