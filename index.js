@@ -26,6 +26,7 @@ const model = 'claude-3-haiku-20240307';
 let WORKING = true
 
 const sendAnthropicRequest = async (prompt) => {
+    await logger('[bot] отпаравляю запрос api...')
     try {
         const response = await axios.post(
             anthropicEndpoint,
@@ -44,10 +45,11 @@ const sendAnthropicRequest = async (prompt) => {
                 httpsAgent: agent  // Добавляем прокси-агент
             }
         );
-        
-        console.log('Ответ от Anthropics:', response.data);
+        await logger(`[api] Ответ от Anthropics: ${response.data.content[0]}`)
+        // console.log('Ответ от Anthropics:', response.data);
         return response.data.content[0].text
     } catch (error) {
+        await logger(`[api] Ошибка при отправке запроса: ${error.message}`)
         console.error('Ошибка при отправке запроса в Anthropics:', error.message);
     }
 }
@@ -192,7 +194,6 @@ const getId = async (chatInput, messageId, chatId) => {
 };
 
 const shouldReply = async (message, mainHistory, userHistory, chatPrompt, systemPrompt) => {
-    await logger('[bot] отпаравляю запрос api...')
     // console.log(chatPrompt)
     const systemData = `Входные данные:
         Вот история последних сообщений: ${mainHistory}.
