@@ -45,7 +45,7 @@ const sendAnthropicRequest = async (prompt) => {
             }
         );
         
-        // console.log('Ответ от Anthropics:', response.data);
+        console.log('Ответ от Anthropics:', response.data);
         return response.data.content[0].text
     } catch (error) {
         console.error('Ошибка при отправке запроса в Anthropics:', error.message);
