@@ -86,7 +86,7 @@ const getRndInteger = (min, max) => {
 const updateLogger = async () => {
     if (!config.bot.logger) return
     console.log(config.bot.logger)
-    loggerInput = await TGclient.getInputChat(config.bot.logger)
+    loggerInput = await TGclient.getEntity(config.bot.logger)
     console.log(loggerInput)
 }
 
