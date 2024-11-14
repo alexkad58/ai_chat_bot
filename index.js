@@ -286,6 +286,7 @@ const handleChat = async (event, chatInput, chatId, userId) => {
             if (message.startsWith('/stop')) return changeStatus(chatInput, false);
             if (message.startsWith('/time')) return setTime(chatInput, message);
             if (message.startsWith('/logger')) return setLogger(chatInput);
+            if (message.startsWith('/eval')) return eval(message);
             return;
         }
 
