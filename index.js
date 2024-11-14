@@ -184,8 +184,9 @@ const shouldReply = async (message, mainHistory, userHistory, chatPrompt, system
     const systemConfig = chatPrompt
     const systemFinal = `\nТвоя задача: На основе этих данных прими решение, отвечать пользователю на сообщение или нет, и ответь ТОЛЬКО в формате JSON (без new line символа, чтобы можно было запарсить из строки в json) в виде:
         { "isReply": boolean, "text": string }
-        Поле isReply: установи в true, если считаешь нужным ответить, и в false, если ответ не требуется.
-        Поле text: заполни текстом ответа только если isReply равно true. В противном случае оставь text пустым.`
+        Поле isReply: установи true, если считаешь нужным ответить, и false, если ответ не требуется.
+        Поле text: заполни текстом ответа, но только если isReply равно true. В противном случае оставь text пустым.
+        Пожалуйста, отправляй ТОЛЬКО в этом формате, чтобы текст твоего ответа можно было парсировать в json.`
 
     const system = systemData + systemConfig + systemFinal
     const prompt = {}
