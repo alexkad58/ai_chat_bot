@@ -45,7 +45,7 @@ const sendAnthropicRequest = async (prompt) => {
                 httpsAgent: agent  // Добавляем прокси-агент
             }
         );
-        await logger(`[api] Ответ от Anthropics: ${JSON.parse(response.data.content[0])}`)
+        await logger(`[api] Ответ от Anthropics: ${response.data.content[0].text}`)
         // console.log('Ответ от Anthropics:', response.data);
         return response.data.content[0].text
     } catch (error) {
