@@ -223,7 +223,15 @@ const shouldReply = async (message, mainHistory, userHistory, chatPrompt, system
     prompt.text = message
     prompt.system = system
     let reply = await sendAnthropicRequest(prompt)
-    reply = JSON.parse(reply)
+    try {
+        reply = JSON.parse(reply)
+    } catch (e) {
+        reply = {
+            isReply: true,
+            text: reply
+        }
+        logger(`[api] Переделываю в нужный формат...`)
+    }
     return reply;
 };
 
