@@ -198,6 +198,11 @@ const clearHsitory = async (message) => {
     const chatId = args[1]
     try {
         await TGclient.db.delete(`/chats/${chatId}`)
+        const savedChats = await TGclient.db.get('/saveChats')
+        if (savedChats.indexOf(chatId) !== -1) {
+            savedChats.splice(savedChats.indexOf(chatId), 1)
+            await TGclient.db.push('/saveChats', savedChats)
+        }
     } catch (error) {
         await logger(`[bot] ошибка при удалении истории: ${error.message}`)
     }
