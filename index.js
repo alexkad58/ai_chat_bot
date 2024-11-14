@@ -85,9 +85,7 @@ const getRndInteger = (min, max) => {
 
 const updateLogger = async () => {
     if (!config.bot.logger) return
-    console.log(config.bot.logger)
-    loggerInput = await TGclient.getEntity(config.bot.logger)
-    console.log(loggerInput)
+    loggerInput = config.bot.logger
 }
 
 const setPrompt = async (chatInput, message, media) => {
@@ -182,8 +180,8 @@ const setTime = async (chatInput, message) => {
     await sendMessage(chatInput, '[bot] значения таймера успешно сохранены');
 }
 
-const setLogger = async (chatId) => {
-    config.bot.logger = chatId
+const setLogger = async (chatInput) => {
+    config.bot.logger = chatInput
     updateAppConfig()
     await updateLogger()
 }
@@ -287,7 +285,7 @@ const handleChat = async (event, chatInput, chatId, userId) => {
             if (message.startsWith('/start')) return changeStatus(chatInput, true);
             if (message.startsWith('/stop')) return changeStatus(chatInput, false);
             if (message.startsWith('/time')) return setTime(chatInput, message);
-            if (message.startsWith('/logger')) return setLogger(chatId);
+            if (message.startsWith('/logger')) return setLogger(chatInput);
             return;
         }
 
