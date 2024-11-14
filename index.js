@@ -183,7 +183,7 @@ const setTime = async (chatInput, message) => {
 }
 
 const setLogger = async (chatInput) => {
-    inputLogger = chatInput
+    loggerInput = chatInput
     await logger('[bot] логгер запущен')
 }
 
