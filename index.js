@@ -59,13 +59,14 @@ const TGclient = new TelegramClient(stringSession, apiId, apiHash, { connectionR
 const db = new JsonDB(new Config("db", true, true, '/'));
 TGclient.db = db;
 
-const updateSessionString = (session) => {
-    config.bot.stringSession = session;
+let loggerInput
+
+const updateAppConfig = () => {
     fs.writeFile('config.json', JSON.stringify(config), 'utf8', (err) => {
         if (err) throw err;
-        console.log('Сессия записана.');
+        console.log('Конфиг обновлен.');
     });
-};
+}
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -73,9 +74,19 @@ const sendMessage = async (chatId, message) => {
     await TGclient.sendMessage(chatId, { message });
 };
 
+const logger = async (message) => {
+    if (!loggerInput) return
+    await sendMessage(loggerInput, message)
+}
+
 const getRndInteger = (min, max) => {
     return Math.floor(Math.random() * (max - min) ) + min;
   }
+
+const updateLogger = async () => {
+    if (!config.bot.logger) return
+    loggerInput = await TGclient.getEntity(config.bot.logger)
+}
 
 const setPrompt = async (chatInput, message, media) => {
     const args = message.split(' ');
@@ -169,12 +180,19 @@ const setTime = async (chatInput, message) => {
     await sendMessage(chatInput, '[bot] значения таймера успешно сохранены');
 }
 
+const setLogger = async (chatId) => {
+    config.bot.logger = chatId
+    updateAppConfig()
+    await updateLogger()
+}
+
 const getId = async (chatInput, messageId, chatId) => {
     await TGclient.deleteMessages(chatInput, [Number(messageId)], true);
     await sendMessage('me', `[bot] \`${chatId}\``);
 };
 
 const shouldReply = async (message, mainHistory, userHistory, chatPrompt, systemPrompt) => {
+    await logger('[bot] отпаравляю запрос api...')
     // console.log(chatPrompt)
     const systemData = `Входные данные:
         Вот история последних сообщений: ${mainHistory}.
@@ -260,13 +278,14 @@ const handleChat = async (event, chatInput, chatId, userId) => {
 
         const me = await TGclient.getMe();
         if (me.id.valueOf() === userId.valueOf()) {
-            console.log(`[bot] Распознана команда: ${message}`)
+            logger(`[bot] Распознана команда: ${message}`)
             if (message.startsWith('/deep')) return setDeep(chatInput, message);
             if (message.startsWith('/prompt')) return setPrompt(chatInput, message, event.message.media);
             if (message.startsWith('/system')) return setSystem(chatInput, message, event.message.media);
             if (message.startsWith('/start')) return changeStatus(chatInput, true);
             if (message.startsWith('/stop')) return changeStatus(chatInput, false);
             if (message.startsWith('/time')) return setTime(chatInput, message);
+            if (message.startsWith('/logger')) return setLogger(chatId);
             return;
         }
 
@@ -279,7 +298,7 @@ const handleChat = async (event, chatInput, chatId, userId) => {
         chatPrompt = prompts[chatId]
         systemPrompt = prompts.system
         const reply = await shouldReply(message, chatHistory.main, chatHistory[userId], chatPrompt, systemPrompt);
-        console.log(reply)
+        logger(`[api] Решил ответить: ${reply.isReply}`)
         if (reply.isReply) {
             chatHistory.main.push({ assistant: reply.text });
             chatHistory[userId] = chatHistory[userId] || [];
@@ -296,7 +315,7 @@ const handleChat = async (event, chatInput, chatId, userId) => {
         console.error('Ошибка:', error.message);
     }
 };
-let showed = false
+
 const handleMessage = async (event) => {
     
     
@@ -329,7 +348,10 @@ TGclient.addEventHandler(handleMessage, new NewMessage({}));
         onError: console.log,
     });
 
-    updateSessionString(TGclient.session.save());
-    await sendMessage("me", "[bot] запущен");
+    config.bot.stringSession = session;
+    updateAppConfig();
+    // await sendMessage("me", "[bot] запущен");
+    await updateLogger()
+    await logger('[bot] запущен')
     console.log("Успешный вход.");
 })();
