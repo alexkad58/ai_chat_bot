@@ -77,7 +77,7 @@ const sendMessage = async (chatId, message) => {
 };
 
 const logger = async (message) => {
-    if (!loggerInput) return
+    if (!loggerInput) return console.log('There is no chat input, ', message)
     await sendMessage(loggerInput, message)
 }
 
