@@ -85,10 +85,10 @@ const getRndInteger = (min, max) => {
     return Math.floor(Math.random() * (max - min) ) + min;
   }
 
-const updateLogger = async () => {
-    if (!config.bot.logger) return
-    loggerInput = config.bot.logger
-}
+// const updateLogger = async () => {
+//     if (!config.bot.logger) return
+//     loggerInput = config.bot.logger
+// }
 
 const setPrompt = async (chatInput, message, media) => {
     const args = message.split(' ');
@@ -183,9 +183,8 @@ const setTime = async (chatInput, message) => {
 }
 
 const setLogger = async (chatInput) => {
-    config.bot.logger = chatInput
-    updateAppConfig()
-    await updateLogger()
+    inputLogger = chatInput
+    await logger('[bot] логгер запущен')
 }
 
 const getId = async (chatInput, messageId, chatId) => {
@@ -351,8 +350,8 @@ TGclient.addEventHandler(handleMessage, new NewMessage({}));
 
     config.bot.stringSession = TGclient.session.save();
     updateAppConfig();
-    // await sendMessage("me", "[bot] запущен");
-    await updateLogger()
-    await logger('[bot] запущен')
+    await sendMessage("me", "[bot] запущен");
+    // await updateLogger()
+    // await logger('[bot] запущен')
     console.log("Успешный вход.");
 })();
