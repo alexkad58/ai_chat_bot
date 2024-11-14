@@ -182,11 +182,13 @@ const shouldReply = async (message, mainHistory, userHistory, chatPrompt, system
         Вот сообщение на которое ды должен ответить или не отвечать: ${message}.
         Вот промпт для общения:\n`
     const systemConfig = chatPrompt
-    const systemFinal = `\nТвоя задача: На основе этих данных прими решение, отвечать пользователю на сообщение или нет, и ответь ТОЛЬКО в формате JSON (без new line символа, чтобы можно было запарсить из строки в json) в виде:
-        { "isReply": boolean, "text": string }
-        Поле isReply: установи true, если считаешь нужным ответить, и false, если ответ не требуется.
-        Поле text: заполни текстом ответа, но только если isReply равно true. В противном случае оставь text пустым.
-        Пожалуйста, отправляй ТОЛЬКО в этом формате, чтобы текст твоего ответа можно было парсировать в json.`
+    const systemFinal = `\nТвоя задача: Опираясь на предоставленные данные, прими решение, нужно ли отвечать на сообщение, и ответь строго в формате JSON, без каких-либо символов перевода строки, пробелов или дополнительного текста вне JSON-структуры. Отвечай исключительно в следующем формате:
+{ "isReply": boolean, "text": string }
+Поле isReply: установи в true, если считаешь нужным ответить, и в false, если ответ не требуется.
+Поле text: заполни текстом ответа, но только если isReply равно true. В противном случае оставь text пустым ("").
+Пожалуйста, не добавляй никакой другой текст, символы или форматирование, кроме указанного JSON. Весь твой ответ должен полностью соответствовать JSON-структуре, чтобы его можно было правильно распознать как JSON.
+
+Напоминаю: отправляй ответ только в указанной JSON-структуре, без пробелов, переносов строк или комментариев.`
 
     const system = systemData + systemConfig + systemFinal
     const prompt = {}
@@ -202,9 +204,9 @@ const shouldReply = async (message, mainHistory, userHistory, chatPrompt, system
     prompt.messages.push({ role: 'user', content: message })
     prompt.text = message
     prompt.system = system
-    const reply = await sendAnthropicRequest(prompt)
-
-    return JSON.parse(reply);
+    let reply = await sendAnthropicRequest(prompt)
+    reply = JSON.parse(reply)
+    return reply;
 };
 
 const handleUser = async (event, chatInput, userId) => {
