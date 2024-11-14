@@ -278,7 +278,7 @@ const handleChat = async (event, chatInput, chatId, userId) => {
 
         const me = await TGclient.getMe();
         if (me.id.valueOf() === userId.valueOf()) {
-            logger(`[bot] Распознана команда: ${message}`)
+            await logger(`[bot] Распознана команда: ${message}`)
             if (message.startsWith('/deep')) return setDeep(chatInput, message);
             if (message.startsWith('/prompt')) return setPrompt(chatInput, message, event.message.media);
             if (message.startsWith('/system')) return setSystem(chatInput, message, event.message.media);
@@ -298,7 +298,7 @@ const handleChat = async (event, chatInput, chatId, userId) => {
         chatPrompt = prompts[chatId]
         systemPrompt = prompts.system
         const reply = await shouldReply(message, chatHistory.main, chatHistory[userId], chatPrompt, systemPrompt);
-        logger(`[api] Решил ответить: ${reply.isReply}`)
+        await logger(`[api] Решил ответить: ${reply.isReply}`)
         if (reply.isReply) {
             chatHistory.main.push({ assistant: reply.text });
             chatHistory[userId] = chatHistory[userId] || [];
