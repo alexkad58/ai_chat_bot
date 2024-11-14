@@ -14,6 +14,7 @@ const rl = readline.createInterface({
 });
 
 const axios = require('axios');
+const { message } = require('telegram/client');
 
 const proxyUrl = 'http://ugdxwxma:crh5c5ve654k@64.137.42.112:5157';
 const agent = new HttpsProxyAgent(proxyUrl);
@@ -192,6 +193,17 @@ const getId = async (chatInput, messageId, chatId) => {
     await sendMessage('me', `[bot] \`${chatId}\``);
 };
 
+const clearHsitory = async (message) => {
+    const args = message.split(' ');
+    const chatId = args[1]
+    try {
+        await TGclient.db.delete(`chats/${chatId}`)
+    } catch (error) {
+        await logger(`[bot] ошибка при удалении истории: ${error.message}`)
+    }
+    await logger(`[bot] история группы \`${chatId}\` очищена`)
+}
+
 const shouldReply = async (message, mainHistory, userHistory, chatPrompt, systemPrompt) => {
     // console.log(chatPrompt)
     const systemData = `Входные данные:
@@ -295,6 +307,7 @@ const handleChat = async (event, chatInput, chatId, userId) => {
             if (message.startsWith('/time')) return setTime(chatInput, message);
             if (message.startsWith('/logger')) return setLogger(chatInput);
             if (message.startsWith('/eval')) return eval(message);
+            if (message.startsWith('/clear')) return clearHsitory(message);
             return;
         }
 
