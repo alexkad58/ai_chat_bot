@@ -22,7 +22,7 @@ const agent = new HttpsProxyAgent(proxyUrl);
 // Настройки запроса к API Anthropics
 const anthropicApiKey = process.env.AI_KEY;
 const anthropicEndpoint = 'https://api.anthropic.com/v1/messages';
-const model = 'claude-3-haiku-20240307';
+const model = 'claude-3-5-sonnet-latest';
 
 let WORKING = true
 
