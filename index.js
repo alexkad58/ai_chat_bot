@@ -5,6 +5,7 @@ const { StringSession } = require("telegram/sessions");
 const { NewMessage } = require('telegram/events');
 const { JsonDB, Config } = require('node-json-db');
 const { HttpsProxyAgent } = require('https-proxy-agent')
+const { randomUUID } = require('crypto');
 const fs = require('fs');
 const readline = require("readline");
 
@@ -21,16 +22,87 @@ const agent = new HttpsProxyAgent(proxyUrl);
 
 // Настройки запроса к API Anthropics
 const anthropicApiKey = process.env.AI_KEY;
-const anthropicEndpoint = 'https://api.anthropic.com/v1/messages';
+const anthropicEndpoint = 'https://api.anthropic.com/v1/messages/batches';
+const fastAnthropicEndpoint = 'https://api.anthropic.com/v1/messages';
 const model = 'claude-3-5-sonnet-latest';
 
 let WORKING = true
+let TESTING_ID = ''
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 const sendAnthropicRequest = async (prompt) => {
     await logger('[bot] отпаравляю запрос api...')
-    try {
+    const customId = randomUUID()
+    try {  
         const response = await axios.post(
             anthropicEndpoint,
+            {
+                requests: [
+                    {
+                        custom_id: customId,
+                        params: {
+                            model: model,
+                            max_tokens: 1024,
+                            system: prompt.system,
+                            messages: prompt.messages
+                        }
+                    }
+                ]
+            },
+            {
+                headers: {
+                    'x-api-key': anthropicApiKey,
+                    'anthropic-version': '2023-06-01',
+                    'anthropic-beta': 'message-batches-2024-09-24',
+                    'Content-Type': 'application/json'
+                },
+                httpsAgent: agent  // Добавляем прокси-агент
+            }
+        );
+
+        const resId = response.data.id
+        let resUrl
+        while (true) {
+            await sleep(30000)
+            const check = await axios.get(`${anthropicEndpoint}/${resId}`, {
+                headers: {
+                  'x-api-key': anthropicApiKey,
+                  'anthropic-version': '2023-06-01',
+                  'anthropic-beta': 'message-batches-2024-09-24'
+                },
+                httpsAgent: agent
+            });
+            await logger(`[api] [${resId}] статус ответа: ${check.data.processing_status}`)
+            if (check.data.processing_status == 'ended') {
+                resUrl = check.data.results_url
+                break 
+            }
+        }
+
+        await logger(`[api] [${resId}] получаю ответ...`)
+        const result = await axios.get(resUrl, {
+            headers: {
+              'x-api-key': anthropicApiKey,
+              'anthropic-version': '2023-06-01',
+              'anthropic-beta': 'message-batches-2024-09-24'
+            },
+            httpsAgent: agent
+        });
+
+        await logger(`[api] ответ от Anthropics: ${result.data.result.message.content[0].text}`)
+        return result.data.result.message.content[0].text
+    } catch (error) {
+        await logger(`[api] ошибка при отправке запроса: ${error.message}`)
+        console.error('ошибка при отправке запроса в Anthropics:', error.message);
+    }
+}
+
+const sendFastAnthropicRequest = async (prompt) => {
+    await logger('[bot] отпаравляю запрос api...')
+    try {
+        const response = await axios.post(
+            fastAnthropicEndpoint,
             {
                 model: model,
                 max_tokens: 1024,
@@ -46,12 +118,11 @@ const sendAnthropicRequest = async (prompt) => {
                 httpsAgent: agent  // Добавляем прокси-агент
             }
         );
-        await logger(`[api] Ответ от Anthropics: ${response.data.content[0].text}`)
-        // console.log('Ответ от Anthropics:', response.data);
+        await logger(`[api] ответ от Anthropics: ${response.data.content[0].text}`)
         return response.data.content[0].text
     } catch (error) {
-        await logger(`[api] Ошибка при отправке запроса: ${error.message}`)
-        console.error('Ошибка при отправке запроса в Anthropics:', error.message);
+        await logger(`[api] ошибка при отправке запроса: ${error.message}`)
+        console.error('ошибка при отправке запроса в Anthropics:', error.message);
     }
 }
 
@@ -71,8 +142,6 @@ const updateAppConfig = () => {
     });
 }
 
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-
 const sendMessage = async (chatId, message) => {
     await TGclient.sendMessage(chatId, { message });
 };
@@ -85,11 +154,6 @@ const logger = async (message) => {
 const getRndInteger = (min, max) => {
     return Math.floor(Math.random() * (max - min) ) + min;
   }
-
-// const updateLogger = async () => {
-//     if (!config.bot.logger) return
-//     loggerInput = config.bot.logger
-// }
 
 const setPrompt = async (chatInput, message, media) => {
     const args = message.split(' ');
@@ -120,7 +184,7 @@ const setPrompt = async (chatInput, message, media) => {
                 const userEntity = await TGclient.getEntity(target);
                 configTg.prompts[userEntity.id] = textPrompt;
             } catch (error) {
-                console.log('Ошибка:', error.message);
+                console.log('1Ошибка:', error.message);
             }
         } else {
             configTg.prompts[target] = textPrompt;
@@ -209,7 +273,17 @@ const clearHsitory = async (message) => {
     await logger(`[bot] история группы \`${chatId}\` очищена`)
 }
 
-const shouldReply = async (message, mainHistory, userHistory, chatPrompt, systemPrompt, userInfo) => {
+const setTesting = async (chatId) => {
+    if (chatId != TESTING_ID) {
+        TESTING_ID = chatId
+        await logger(`[bot] теперь чат \`${chatId}\` в режиме теста`)
+    } else {
+        TESTING_ID = ''
+        await logger(`[bot] режим теста для чата \`${chatId}\` выключен`)
+    }
+}
+
+const shouldReply = async (message, mainHistory, userHistory, chatPrompt, systemPrompt, userInfo, chatId) => {
     // console.log(chatPrompt)
     const systemData = `Входные данные:
         Вот история последних сообщений: ${mainHistory}.
@@ -244,7 +318,14 @@ const shouldReply = async (message, mainHistory, userHistory, chatPrompt, system
     prompt.messages.push({ role: 'user', content: message })
     prompt.text = message
     prompt.system = system
-    let reply = await sendAnthropicRequest(prompt)
+
+    let reply
+    if (TESTING_ID == chatId) {
+        reply = await sendFastAnthropicRequest(prompt)
+    } else {
+        reply = await sendAnthropicRequest(prompt)
+    }
+
     try {
         reply = JSON.parse(reply)
     } catch (e) {
@@ -318,6 +399,7 @@ const handleChat = async (event, chatInput, chatId, userId) => {
             if (message.startsWith('/logger')) return setLogger(chatInput);
             if (message.startsWith('/eval')) return eval(message);
             if (message.startsWith('/clear')) return clearHsitory(message);
+            if (message.startsWith('/testing')) return setTesting(chatId);
             return;
         }
 
@@ -342,7 +424,7 @@ const handleChat = async (event, chatInput, chatId, userId) => {
             lastName: user.users[0].lastName,
             bio: user.fullUser.about
         }
-        const reply = await shouldReply(message, chatHistory.main, chatHistory[userId], chatPrompt, systemPrompt, userInfo);
+        const reply = await shouldReply(message, chatHistory.main, chatHistory[userId], chatPrompt, systemPrompt, userInfo, chatId);
         await logger(`[api] Решил ответить: ${reply.isReply}`)
         if (reply.isReply) {
             chatHistory.main.push({ assistant: reply.text });
