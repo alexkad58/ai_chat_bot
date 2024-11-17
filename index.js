@@ -64,7 +64,7 @@ const sendAnthropicRequest = async (prompt) => {
         const resId = response.data.id
         let resUrl
         while (true) {
-            await sleep(30000)
+            await sleep(300000)
             const check = await axios.get(`${anthropicEndpoint}/${resId}`, {
                 headers: {
                   'x-api-key': anthropicApiKey,
