@@ -1,4 +1,4 @@
-const config = require('./config.json');
+const config = require('./config.json')
 require('dotenv').config()
 const { Api, TelegramClient } = require("telegram");
 const { StringSession } = require("telegram/sessions");
