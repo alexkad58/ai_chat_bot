@@ -1,19 +1,19 @@
 {
-    "users": {},
-    "chats": {
-       
-    },
-    "savedUsers": [
-      
-    ],
-    "savedChats": [
+    "users": {
 
-    ],
-    "configTg": {
+    },
+    "chats": {
+        
+    },
+    "savedUsers": [],
+    "savedChats": [],
+    "config": {
         "prompts": {
-            "global": "обычный веселый человек"
+
         },
-        "chatGlobal": 15,
-        "chatUser": 20
+        "chatHistorySize": 15,
+        "userHistorySize": 20,
+        "testChannel": "",
+        "cycleTimer": 60000
     }
 }
