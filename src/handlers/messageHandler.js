@@ -19,10 +19,8 @@ const handleMessage = async (event, client) => {
         }
         if (!client.cache.history.chats[chatId]) {
             client.cache.history.chats[chatId] = []
-            // await client.db.push(`/chats/${chatId}`, [])
         }
         client.cache.history.chats[chatId].push(messageUnit)
-        // await client.db.push(`/chats/${chatId}[]`, messageUnit)
 
     } else if (userId) {
         if (!client.cache.config.prompts[userId]) return;
