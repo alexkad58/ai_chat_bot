@@ -131,5 +131,3 @@ dist
 
 # nodemon
 nodemon.json
-db.json
-./config/config.json

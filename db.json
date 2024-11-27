@@ -1,16 +1,10 @@
 {
-    "users": {
-
-    },
-    "chats": {
-        
-    },
+    "users": {},
+    "chats": {},
     "savedUsers": [],
     "savedChats": [],
     "config": {
-        "prompts": {
-
-        },
+        "prompts": {},
         "chatHistorySize": 15,
         "userHistorySize": 20,
         "testChannel": "",
