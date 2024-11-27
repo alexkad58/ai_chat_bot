@@ -1,5 +1,5 @@
 const sendMessage = require("../../utils/sendMessage");
-const logger = require("../utils/logger");
+const logger = require("../../utils/logger");
 
 module.exports = {
     name: 'eval',
