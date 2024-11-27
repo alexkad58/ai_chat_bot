@@ -69,8 +69,14 @@ const sendReplies = async (responses, client) => {
     logger(`[бот] Отправляю ответы...`, client)
     responses.forEach(async (res) => {
         try {
-            const responce = JSON.parse(res.responce_text)
-            if (!responce.main) return
+            let responce
+            try {
+                responce = JSON.parse(res.responce_text)
+                if (!responce.main) return
+            } catch (error) {
+                logger(`[бот] Ошибка парсинга: ${error.message}\n[бот] Полученные данные: ${res.responce_text}`, client)
+                responce = {}
+            }
 
             for await (const responseObj of responce.main) {
                 const chatId = res.chat_id
