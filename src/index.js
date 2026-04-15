@@ -35,7 +35,7 @@ const client = new TelegramClient(stringSession, apiId, apiHash, {
       socksType: 5,
       username: "alexkad58",
       password: "alexkad58",
-      timeout: 2,
+      timeout: 10,
     }
 });
 const db = new JsonDB(new Config("db", true, true, '/'));
