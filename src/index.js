@@ -27,7 +27,17 @@ if (apiId === 0 || apiHash.length === 0) {
     process.exit()
 }
 const stringSession = new StringSession(config.bot.stringSession);
-const client = new TelegramClient(stringSession, apiId, apiHash, { connectionRetries: 5 });
+const client = new TelegramClient(stringSession, apiId, apiHash, { 
+    connectionRetries: 5,
+    proxy: {
+      ip: "181.214.117.29",
+      port: 15294,
+      socksType: 5,
+      username: "user301581",
+      password: "lqvn2y",
+      timeout: 2,
+    }
+});
 const db = new JsonDB(new Config("db", true, true, '/'));
 client.db = db;
 
