@@ -30,11 +30,11 @@ const stringSession = new StringSession(config.bot.stringSession);
 const client = new TelegramClient(stringSession, apiId, apiHash, { 
     connectionRetries: 5,
     proxy: {
-      ip: "181.214.117.29",
-      port: 15294,
+      ip: "31.58.9.4",
+      port: 6077,
       socksType: 5,
-      username: "user301581",
-      password: "lqvn2y",
+      username: "alexkad58",
+      password: "alexkad58",
       timeout: 2,
     }
 });
