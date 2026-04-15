@@ -30,10 +30,9 @@ const stringSession = new StringSession(config.bot.stringSession);
 const client = new TelegramClient(stringSession, apiId, apiHash, { 
     connectionRetries: 5,
     proxy: {
-      ip: "he.fi.10.mtproto.ru",
-      port: 443,
-      MTProxy: true,
-      secret: "ee2111222233334444555566667777888862726f777365722e79616e6465782e636f6d",
+      ip: "127.0.0.1",
+      port: 1080,
+      socksType: 5,
       timeout: 10,
     }
 });
