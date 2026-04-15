@@ -7,7 +7,7 @@ const generateRequestOptions = require('./generateRequestOptions');
 const sendMessage = require('./sendMessage');
 const logger = require('./logger');
 
-const proxyUrl = 'http://ugdxwxma:crh5c5ve654k@64.137.42.112:5157';
+const proxyUrl = 'http://user301581:lqvn2y@181.214.117.29:5294';
 const agent = new HttpsProxyAgent(proxyUrl);
 
 const anthropicEndpoint = 'https://api.anthropic.com/v1/messages/batches'
